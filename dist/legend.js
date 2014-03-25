@@ -7,7 +7,6 @@
       var group,
         legendGroup,
         markersGroup,
-        labelsGroup,
         title;
 
       options = typeof options === 'object' ? options : {};
@@ -15,6 +14,8 @@
       this.colors(options.colors || d3.scale.category20());
       this.x = options.x || 0;
       this.y = options.y || 0;
+      this.orientation = options.orientation || "v";
+      this.hOffset = options.hOffset || 50;
 
       group = this.base.append('g')
         .attr('class', 'legend')
@@ -36,12 +37,9 @@
       // Groups
       markersGroup = legendGroup.append('g')
         .attr('class', 'markers-group');
-      labelsGroup = legendGroup.append('g')
-        .attr('class', 'labels-group');
 
       // Layers init
       this.layer('markers', markersGroup, markersLayer);
-      this.layer('labels', labelsGroup, labelsLayer);
     },
 
     transform: function (data) {
@@ -96,78 +94,39 @@
 
   markersLayer = {
     dataBind: function (data) {
-      return this.selectAll('circle')
-        .data(data);
+      return this.selectAll('g').data(data);
     },
 
     insert: function () {
-      return this.insert('svg:circle');
+        var group = this.insert("g").classed("marker-group", true);
+        group.append("svg:circle");
+        return group.append("svg:text");
     },
 
     events: {
-      enter: function () {
-        var chart = this.chart();
-
-        return this.attr('class', 'marker')
-          .attr('fill', function (d, i) {
-            return chart.color(i);
-          })
-          .attr('cx', 10)
-          .attr('cy', function (d, i) {
-            return (i * 20) + 10;
-          })
-          .attr('r', chart.markerR);
-      },
-
       merge: function () {
         var chart = this.chart();
 
-        return this.attr('class', 'marker')
+        //update marker circles
+        this.select("circle").attr('class', 'marker')
           .attr('fill', function (d, i) {
             return chart.color(i);
           })
-          .attr('cx', 10)
+          .attr('cx', function (d, i) {
+            return (chart.orientation === "v") ? 0 : (i * chart.hOffset) + 10;
+          })
           .attr('cy', function (d, i) {
-            return (i * 20) + 10;
+            return (chart.orientation === "v") ? (i * 20) + 10 : 0;
           })
           .attr('r', chart.markerR);
-      },
 
-      exit: function () {
-        return this.remove();
-      }
-    }
-  };
-
-  labelsLayer = {
-    dataBind: function (data) {
-      return this.selectAll('text')
-        .data(data);
-    },
-
-    insert: function () {
-      return this.insert('svg:text');
-    },
-
-    events: {
-      enter: function () {
-        var chart = this.chart();
-
-        return this.attr('x', 20)
-          .attr('y', function (d, i) {
-            return (i * 20) + 9 + chart.markerR;
+        //update marker text
+        return this.select("text")
+          .attr('x', function (d, i) {
+              return (chart.orientation === "v") ? 9 + chart.markerR : (i * chart.hOffset) + 16 + chart.markerR;
           })
-          .text(function (d) {
-            return d;
-          });
-      },
-
-      merge: function () {
-        var chart = this.chart();
-
-        return this.attr('x', 20)
           .attr('y', function (d, i) {
-            return (i * 20) + 9 + chart.markerR;
+            return (chart.orientation === "v") ? (i * 20) + 11 + chart.markerR / 2 : chart.markerR / 2;
           })
           .text(function (d) {
             return d;
